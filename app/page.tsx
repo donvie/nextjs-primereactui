@@ -1,95 +1,153 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import { DataTable, DataTableExpandedRows, DataTableRowEvent, DataTableValueArray } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { ProductService } from './service/ProductService';
+import { Button } from 'primereact/button';
+import { Toast } from 'primereact/toast';
+import { Tag } from 'primereact/tag';
+
+interface Trait {
+  traitName: string,
+}
+
+interface RequestJob {
+  jobStatus: string,
+  requestJobDbId: string,
+}
+
+interface Product {
+  id: string;
+  requestName: string;
+  requestStatus: string;
+  creationTimestamp: string,
+  analysisType: string,
+  requestJobs?: RequestJob[];
+  traitList?: Trait[];
+}
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    const [products, setProducts] = useState<Product[]>([]);
+    const [expandedRows, setExpandedRows] = useState<DataTableExpandedRows | DataTableValueArray | undefined>(undefined);
+    const toast = useRef<Toast>(null);
+
+    useEffect(() => {
+      ProductService.getProductsWithOrdersSmall().then((data) => {
+        setProducts(data)
+        console.log('asdf', data)
+      });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const onRowExpand = (event: DataTableRowEvent) => {
+      toast.current?.show({ severity: 'info', summary: 'Product Expanded', detail: event.data.requestName, life: 3000 });
+    };
+
+    const onRowCollapse = (event: DataTableRowEvent) => {
+      toast.current?.show({ severity: 'success', summary: 'Product Collapsed', detail: event.data.requestName, life: 3000 });
+    };
+
+    const expandAll = () => {
+      let _expandedRows: DataTableExpandedRows = {};
+
+      products.forEach((p) => (_expandedRows[`${p.id}`] = true));
+
+      setExpandedRows(_expandedRows);
+    };
+
+    const collapseAll = () => {
+      setExpandedRows(undefined);
+    };
+
+    const allowExpansion = (rowData: Product) => {
+      return rowData.requestJobs!.length > 0;
+    };
+
+    const statusBodyTemplate = (rowData: Product) => {
+      return <Tag value={rowData.requestStatus} severity={getProductSeverity(rowData.requestStatus)}></Tag>;
+    };
+
+    const statusRowExpansion = (rowData: RequestJob) => {
+      return <Tag value={rowData.jobStatus} severity={getProductSeverity(rowData.jobStatus)}></Tag>;
+    };
+    
+    const getProductSeverity = (status: String) => {
+      switch (status) {
+        case 'open':
+          return 'success';
+
+        case 'ready':
+          return 'warning';
+
+        case null:
+          return 'danger';
+
+        default:
+          return null;
+      }
+    };
+
+    const bodyTemplateJobName = (product: Product, props: Object) => {
+      const productLength = product.requestJobs?.length
+      return `Multiple (${productLength})`
+    };
+
+    const bodyTemplateTrait = (product: Product, props: Object) => {
+      return 'Multiple'
+    };
+
+    const traitRowExpansion = (product: Product, props: Object) => {
+      const traits = product.traitList?.map((trait) => trait.traitName).join(', ');
+
+      return <div>{traits}</div>;
+    };
+
+    const selectBodyTemplate = (product: Product, props: Object) => {
+
+      return <Button onClick={() => load(product)} icon="pi pi-eye" style={{ color: 'green' }} link />;
+    };
+
+    const load = (product: Product) => {
+      console.log('Product Selected', product)
+    };
+
+    const rowExpansionTemplate = (data: Product) => {
+      return (
+        <div className="p-3">
+          <DataTable value={data.requestJobs}>
+            <Column body={selectBodyTemplate}></Column>
+            <Column field="requestJobDbId" header="Job Name" sortable></Column>
+            <Column field="jobStatus" header="Request Status" body={statusRowExpansion} sortable></Column>
+            <Column field="analysisScript.fileName" header="Occurrence" sortable></Column>
+            <Column field="traitList" header="Trait" body={traitRowExpansion} sortable></Column>
+          </DataTable>
         </div>
+      );
+    };
+
+    const header = (
+      <div className="flex flex-wrap justify-content-end gap-2">
+        <Button icon="pi pi-plus" label="Expand All" onClick={expandAll} text />
+        <Button icon="pi pi-minus" label="Collapse All" onClick={collapseAll} text />
       </div>
+    );
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    return (
+      <div className="card">
+        <Toast ref={toast} />
+        <DataTable value={products} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
+              onRowExpand={onRowExpand} onRowCollapse={onRowCollapse} rowExpansionTemplate={rowExpansionTemplate}
+              dataKey="id" header={header} tableStyle={{ minWidth: '60rem' }}>
+                
+          <Column expander={allowExpansion} style={{ width: '5rem' }} />
+          <Column body={selectBodyTemplate}></Column>
+          <Column field="requestName" header="Request Name" sortable />
+          <Column field="requestJobDbId" header="Job Name" sortable body={bodyTemplateJobName}  />
+          <Column field="requestStatus" body={statusBodyTemplate} header="Request Status" sortable />
+          <Column field="creationTimestamp" header="Created" sortable />
+          <Column field="analysisType" header="Analysis Type" sortable />
+          <Column field="requestCode" header="Occurence" sortable />
+          <Column field="traitName" header="Trait" body={bodyTemplateTrait} sortable />
+        </DataTable>
+    </div>
+  );
 }
