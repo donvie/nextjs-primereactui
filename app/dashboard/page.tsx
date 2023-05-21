@@ -2,11 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DataTable, DataTableExpandedRows, DataTableRowEvent, DataTableValueArray } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProductService } from './service/ProductService';
+import { ProductService } from '../service/ProductService';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface Trait {
@@ -26,6 +25,7 @@ interface Product {
   creationTimestamp: string;
   requestName: string;
   requestJobs: (RequestJob | { [key: string]: any })[]; // Adjust type to allow for different job types
+  traitList?: Trait[];
 }
 
 export default function Home() {
@@ -137,22 +137,45 @@ export default function Home() {
     );
 
     return (
-      <div className="card">
-        <Toast ref={toast} />
-        <DataTable value={products} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
-              onRowExpand={onRowExpand} onRowCollapse={onRowCollapse} rowExpansionTemplate={rowExpansionTemplate}
-              dataKey="id" header={header} tableStyle={{ minWidth: '60rem' }}>
-                
-          <Column expander={allowExpansion} style={{ width: '5rem' }} />
-          <Column body={selectBodyTemplate}></Column>
-          <Column field="requestName" header="Request Name" sortable />
-          <Column field="requestJobDbId" header="Job Name" sortable body={bodyTemplateJobName}  />
-          <Column field="requestStatus" body={statusBodyTemplate} header="Request Status" sortable />
-          <Column field="creationTimestamp" header="Created" sortable />
-          <Column field="analysisType" header="Analysis Type" sortable />
-          <Column field="requestCode" header="Occurence" sortable />
-          <Column field="traitName" header="Trait" body={bodyTemplateTrait} sortable />
-        </DataTable>
+      <div className="grid">
+        <div className="col-4">
+          <div className="card">
+            <Toast ref={toast} />
+            <DataTable value={products} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
+                  onRowExpand={onRowExpand} onRowCollapse={onRowCollapse} rowExpansionTemplate={rowExpansionTemplate}
+                  dataKey="id" header={header} tableStyle={{ minWidth: '60rem' }}>
+                    
+              <Column expander={allowExpansion} style={{ width: '5rem' }} />
+              <Column body={selectBodyTemplate}></Column>
+              <Column field="requestName" header="Request Name" sortable />
+              <Column field="requestJobDbId" header="Job Name" sortable body={bodyTemplateJobName}  />
+              <Column field="requestStatus" body={statusBodyTemplate} header="Request Status" sortable />
+              <Column field="creationTimestamp" header="Created" sortable />
+              <Column field="analysisType" header="Analysis Type" sortable />
+              <Column field="requestCode" header="Occurence" sortable />
+              <Column field="traitName" header="Trait" body={bodyTemplateTrait} sortable />
+            </DataTable>
+          </div>
+        </div>
+        <div className="col-8">
+          <div className="card">
+            <Toast ref={toast} />
+            <DataTable value={products} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
+                  onRowExpand={onRowExpand} onRowCollapse={onRowCollapse} rowExpansionTemplate={rowExpansionTemplate}
+                  dataKey="id" header={header} tableStyle={{ minWidth: '60rem' }}>
+                    
+              <Column expander={allowExpansion} style={{ width: '5rem' }} />
+              <Column body={selectBodyTemplate}></Column>
+              <Column field="requestName" header="Request Name" sortable />
+              <Column field="requestJobDbId" header="Job Name" sortable body={bodyTemplateJobName}  />
+              <Column field="requestStatus" body={statusBodyTemplate} header="Request Status" sortable />
+              <Column field="creationTimestamp" header="Created" sortable />
+              <Column field="analysisType" header="Analysis Type" sortable />
+              <Column field="requestCode" header="Occurence" sortable />
+              <Column field="traitName" header="Trait" body={bodyTemplateTrait} sortable />
+            </DataTable>
+          </div>
+        </div>
     </div>
   );
 }

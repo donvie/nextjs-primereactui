@@ -240,6 +240,25 @@ export const ProductService = {
         ];
     },
 
+    getProductsPagination () {
+        return {
+            metadata: {
+                pagination: {
+                    pageSize: 1,
+                    totalCount: 1,
+                    currentPage: 1,
+                    totalPages: 1
+                },
+                status: {
+                    message: "Request has been successfully completed.",
+                    messageType: "INFO"
+                },
+                datafiles: [],
+                additional: {}
+            },
+        }
+    },
+
     getProductsWithOrdersSmall() {
         return Promise.resolve(this.getProductsWithOrdersData().slice(0, 10));
     }
