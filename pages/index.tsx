@@ -1,13 +1,13 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { DataTable, DataTableExpandedRows, DataTableRowEvent, DataTableValueArray } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProductService } from './service/ProductService';
+import { ProductService } from '../hooks/ProductService';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 
 interface Trait {
   traitName: string,
@@ -20,12 +20,14 @@ interface RequestJob {
 
 interface Product {
   id: string;
+  requestDbId: string;
   requestStatus: string;
   analysisType: string;
   requestCode: string;
   creationTimestamp: string;
   requestName: string;
   requestJobs: (RequestJob | { [key: string]: any })[]; // Adjust type to allow for different job types
+  traitList?: Trait[]; // Add traitList property
 }
 
 export default function Home() {
@@ -111,8 +113,11 @@ export default function Home() {
     };
 
     const load = (product: Product) => {
+      router.push({
+        pathname: '/dashboard',
+        query: { jobID: product.id, requestID: product.requestDbId },
+      });
       console.log('Product Selected', product)
-      router.push('/dashboard')
     };
 
     const rowExpansionTemplate = (data: Product) => {
