@@ -3,7 +3,7 @@ export const ProductService = {
         return [
             {
                 id: '1000',
-                requestStatus: 'open',
+                requestStatus: 'ready',
                 analysisType: 'Bamboo Watch',
                 requesterDbId: 1,
                 message: null,

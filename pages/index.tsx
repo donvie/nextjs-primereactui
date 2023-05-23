@@ -14,8 +14,9 @@ interface Trait {
 }
 
 interface RequestJob {
-  jobStatus: string,
-  requestJobDbId: string,
+  jobStatus: string;
+  requestJobDbId: string;
+  requestDbId: number;
 }
 
 interface Product {
@@ -108,23 +109,36 @@ export default function Home() {
     };
 
     const selectBodyTemplate = (product: Product, props: Object) => {
+      const isJobReady = product.requestJobs?.filter(requestJob => requestJob.jobStatus === 'ready').length
 
-      return <Button onClick={() => load(product)} icon="pi pi-eye" style={{ color: 'green' }} link />;
+      return isJobReady >= 1 ? <Button onClick={() => loadProduct(product)} icon="pi pi-eye" style={{ color: 'green' }} link /> : null;
     };
 
-    const load = (product: Product) => {
+    const selectBodyRowExpansionTemplate = (request: RequestJob, props: Object) => {
+      return request.jobStatus === 'ready'? <Button onClick={() => loadRequest(request)} icon="pi pi-eye" style={{ color: 'green' }} link /> : null;
+    };
+
+    const loadProduct = (product: Product) => {
       router.push({
         pathname: '/dashboard',
-        query: { jobID: product.id, requestID: product.requestDbId },
+        query: { jobID: 1, requestID: product.requestDbId },
       });
       console.log('Product Selected', product)
+    };
+
+    const loadRequest = (request: RequestJob) => {
+      router.push({
+        pathname: '/dashboard',
+        query: { jobID: request.requestJobDbId, requestID: request.requestDbId },
+      });
+      console.log('RequestJob Selected', request)
     };
 
     const rowExpansionTemplate = (data: Product) => {
       return (
         <div className="p-3">
           <DataTable value={data.requestJobs}>
-            <Column body={selectBodyTemplate}></Column>
+            <Column body={selectBodyRowExpansionTemplate}></Column>
             <Column field="requestJobDbId" header="Job Name" sortable></Column>
             <Column field="jobStatus" header="Request Status" body={statusRowExpansion} sortable></Column>
             <Column field="analysisScript.fileName" header="Occurrence" sortable></Column>
