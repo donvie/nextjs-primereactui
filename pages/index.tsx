@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DataTable, DataTableExpandedRows, DataTableRowEvent, DataTableValueArray } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProductService } from '../hooks/ProductService';
+import { RequestService } from '../hooks/RequestService';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
@@ -13,13 +13,13 @@ interface Trait {
   traitName: string,
 }
 
-interface RequestJob {
+interface Job {
   jobStatus: string;
   requestJobDbId: string;
   requestDbId: number;
 }
 
-interface Product {
+interface Request {
   id: string;
   requestDbId: string;
   requestStatus: string;
@@ -27,37 +27,36 @@ interface Product {
   requestCode: string;
   creationTimestamp: string;
   requestName: string;
-  requestJobs: (RequestJob | { [key: string]: any })[]; // Adjust type to allow for different job types
-  traitList?: Trait[]; // Add traitList property
+  requestJobs: (Job | { [key: string]: any })[];
+  traitList?: Trait[];
 }
 
 export default function Home() {
     const router = useRouter();
-    const [products, setProducts] = useState<Product[]>([]);
+    const [requests, setRequests] = useState<Request[]>([]);
     const [expandedRows, setExpandedRows] = useState<DataTableExpandedRows | DataTableValueArray | undefined>(undefined);
     const toast = useRef<Toast>(null);
 
     useEffect(() => {
-      ProductService.getProductsWithOrdersSmall().then((response) => {
-        const data = response as Product[];
-        setProducts(data)
+      RequestService.getRequests().then((response) => {
+        const data = response as Request[];
+        setRequests(data)
         console.log('asdf', data)
       });
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const onRowExpand = (event: DataTableRowEvent) => {
-      toast.current?.show({ severity: 'info', summary: 'Product Expanded', detail: event.data.requestName, life: 3000 });
+      toast.current?.show({ severity: 'info', summary: 'Request Expanded', detail: event.data.requestName, life: 3000 });
     };
 
     const onRowCollapse = (event: DataTableRowEvent) => {
-      toast.current?.show({ severity: 'success', summary: 'Product Collapsed', detail: event.data.requestName, life: 3000 });
+      toast.current?.show({ severity: 'success', summary: 'Request Collapsed', detail: event.data.requestName, life: 3000 });
     };
 
     const expandAll = () => {
       let _expandedRows: DataTableExpandedRows = {};
 
-      products.forEach((p) => (_expandedRows[`${p.id}`] = true));
-
+      requests.forEach((p) => (_expandedRows[`${p.id}`] = true));
       setExpandedRows(_expandedRows);
     };
 
@@ -65,19 +64,19 @@ export default function Home() {
       setExpandedRows(undefined);
     };
 
-    const allowExpansion = (rowData: Product) => {
+    const allowExpansion = (rowData: Request) => {
       return rowData.requestJobs!.length > 0;
     };
 
-    const statusBodyTemplate = (rowData: Product) => {
-      return <Tag value={rowData.requestStatus} severity={getProductSeverity(rowData.requestStatus)}></Tag>;
+    const statusBodyTemplate = (rowData: Request) => {
+      return <Tag value={rowData.requestStatus} severity={getRequestSeverity(rowData.requestStatus)}></Tag>;
     };
 
-    const statusRowExpansion = (rowData: RequestJob) => {
-      return <Tag value={rowData.jobStatus} severity={getProductSeverity(rowData.jobStatus)}></Tag>;
+    const statusRowExpansion = (rowData: Job) => {
+      return <Tag value={rowData.jobStatus} severity={getRequestSeverity(rowData.jobStatus)}></Tag>;
     };
     
-    const getProductSeverity = (status: String) => {
+    const getRequestSeverity = (status: String) => {
       switch (status) {
         case 'open':
           return 'success';
@@ -93,48 +92,50 @@ export default function Home() {
       }
     };
 
-    const bodyTemplateJobName = (product: Product, props: Object) => {
-      const productLength = product.requestJobs?.length
-      return `Multiple (${productLength})`
+    const bodyTemplateJobName = (request: Request, props: Object) => {
+      const requestJobsLength = request.requestJobs?.length
+      return `Multiple (${requestJobsLength})`
     };
 
-    const bodyTemplateTrait = (product: Product, props: Object) => {
+    const bodyTemplateTrait = (request: Request, props: Object) => {
       return 'Multiple'
     };
 
-    const traitRowExpansion = (product: Product, props: Object) => {
-      const traits = product.traitList?.map((trait) => trait.traitName).join(', ');
+    const traitRowExpansion = (request: Request, props: Object) => {
+      const traits = request.traitList?.map((trait) => trait.traitName).join(', ');
 
       return <div>{traits}</div>;
     };
 
-    const selectBodyTemplate = (product: Product, props: Object) => {
-      const isJobReady = product.requestJobs?.filter(requestJob => requestJob.jobStatus === 'ready').length
+    const selectBodyTemplate = (request: Request, props: Object) => {
+      const isJobReady = request.requestJobs?.filter(requestJob => requestJob.jobStatus === 'ready').length
 
-      return isJobReady >= 1 ? <Button onClick={() => loadProduct(product)} icon="pi pi-eye" style={{ color: 'green' }} link /> : null;
+      return isJobReady >= 1 ? <Button onClick={() => loadProduct(request)} icon="pi pi-eye" style={{ color: 'green' }} link /> : null;
     };
 
-    const selectBodyRowExpansionTemplate = (request: RequestJob, props: Object) => {
+    const selectBodyRowExpansionTemplate = (request: Job, props: Object) => {
       return request.jobStatus === 'ready'? <Button onClick={() => loadRequest(request)} icon="pi pi-eye" style={{ color: 'green' }} link /> : null;
     };
 
-    const loadProduct = (product: Product) => {
+    const loadProduct = (request: Request) => {
+      const filterJobID = request.requestJobs?.filter(requestJob => requestJob.jobStatus === 'ready')[0]
+      console.log('requestJobDbId', filterJobID.requestJobDbId)
       router.push({
-        pathname: '/dashboard',
-        query: { jobID: 1, requestID: product.requestDbId },
+        pathname: '/job',
+        query: { requestID: request.requestDbId, jobID: filterJobID.requestJobDbId },
       });
-      console.log('Product Selected', product)
+      console.log('Product Selected', request)
     };
 
-    const loadRequest = (request: RequestJob) => {
+    const loadRequest = (job: Job) => {
       router.push({
-        pathname: '/dashboard',
-        query: { jobID: request.requestJobDbId, requestID: request.requestDbId },
+        pathname: '/job',
+        query: { requestID: job.requestDbId, jobID: job.requestJobDbId },
       });
-      console.log('RequestJob Selected', request)
+      console.log('Job Selected', job)
     };
 
-    const rowExpansionTemplate = (data: Product) => {
+    const rowExpansionTemplate = (data: Request) => {
       return (
         <div className="p-3">
           <DataTable value={data.requestJobs}>
@@ -158,7 +159,7 @@ export default function Home() {
     return (
       <div className="card">
         <Toast ref={toast} />
-        <DataTable value={products} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
+        <DataTable value={requests} expandedRows={expandedRows} onRowToggle={(e) => setExpandedRows(e.data)}
               onRowExpand={onRowExpand} onRowCollapse={onRowCollapse} rowExpansionTemplate={rowExpansionTemplate}
               dataKey="id" header={header} tableStyle={{ minWidth: '60rem' }}>
                 
