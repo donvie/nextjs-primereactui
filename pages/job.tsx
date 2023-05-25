@@ -119,11 +119,15 @@ export default function Home() {
     }
   }
 
+
+  const isSelectable = (data: any) => data.jobStatus === 'ready';
+  const isRowSelectable = (event: any) => (event.data ? isSelectable(event.data) : true);
+
   return (
     <div className="grid">
       <div className="col-4">
         <div className="card">
-          <DataTable value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
+          <DataTable isDataSelectable={isRowSelectable}  value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
             onSelectionChange={ onSelectionChange } metaKeySelection={false}>
             <Column field="requestJobDbId" header="Job" sortable />
             <Column field="jobStatus" body={statusBodyTemplate} header="Job Status" sortable />
