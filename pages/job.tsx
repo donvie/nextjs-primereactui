@@ -8,6 +8,9 @@ import { ResidualService } from '../hooks/ResidualService';
 import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
 import { useRouter } from 'next/router';
 import { Tag } from 'primereact/tag';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import { ListBox } from 'primereact/listbox';
 
 interface Trait {
   traitName: string,
@@ -61,6 +64,8 @@ interface ColumnMeta {
 
 export default function Home() {
   const router = useRouter();
+  const [visible, setVisible] = useState<boolean>(false);
+  const [visible1, setVisible1] = useState<boolean>(false);
   const { jobID, requestID } = router.query;
   const [requests, setRequests] = useState<Request[]>([]);
   const [residuals, setResiduals] = useState<Residual | null>(null);
@@ -87,7 +92,6 @@ export default function Home() {
   const [visibleColumnsResidual, setvisibleColumnsResidual] = useState<ColumnMeta[]>(columnsResidual);
 
   useEffect(() => {
-    console.log('requestID', requestID)
     JobService.getJobs().then((response) => {
       const data = response as Request[];
       setRequests(data)
@@ -123,9 +127,12 @@ export default function Home() {
 
   const onSelectionChange = (event: any) => {
     const value = event.value as Request;
-    setSelectedJob(value);
-    changeRouteParams(value);
-    loadResiduals(event);
+    // if (value)
+    if (value) {
+      setSelectedJob(value);
+      changeRouteParams(value);
+      loadResiduals(event);
+    }
   };
 
   const loadResiduals = (event: any) => {
@@ -148,41 +155,85 @@ export default function Home() {
   const isSelectable = (data: any) => data.jobStatus === 'ready';
   const isRowSelectable = (event: any) => (event.data ? isSelectable(event.data) : true);
 
-  const onColumnToggle = (event: MultiSelectChangeEvent) => {
-    let selectedColumns = event.value;
-    let orderedSelectedColumns = columnsJob.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+  const onColumnToggleJobsRemove = (event: any) => {
+    let selectedColumn = event.field;
 
-    setVisibleColumnsJob(orderedSelectedColumns);
+    const filterVisibleColumnsJob = visibleColumnsJob.filter((visibleColumn) => visibleColumn.field !== selectedColumn)
+    setVisibleColumnsJob(filterVisibleColumnsJob);
   };
 
-  const onColumnToggle1 = (event: MultiSelectChangeEvent) => {
-    let selectedColumns = event.value;
-    let orderedSelectedColumns = columnsResidual.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+  const onColumnToggleJobsAdd = (event: any) => {
 
-    setvisibleColumnsResidual(orderedSelectedColumns);
+    const filterVisibleColumnsJob = [...visibleColumnsJob, ...[event]]
+    console.log('filterVisibleColumnsJob', filterVisibleColumnsJob)
+    
+    setVisibleColumnsJob(filterVisibleColumnsJob);
   };
 
-  const header = <MultiSelect value={visibleColumnsJob} options={columnsJob} optionLabel="header" onChange={onColumnToggle} className="w-full sm:w-20rem" display="chip" />;
-  const header1 = <MultiSelect value={visibleColumnsResidual} options={columnsResidual} optionLabel="header" onChange={onColumnToggle1} className="w-full sm:w-20rem" display="chip" />;
+  const onColumnToggleResidualRemove = (event: any) => {
+    let selectedColumn = event.field;
+
+    const filterVisibleColumnsResidual = visibleColumnsResidual.filter((visibleColumn) => visibleColumn.field !== selectedColumn)
+    setvisibleColumnsResidual(filterVisibleColumnsResidual);
+  };
+
+  const onColumnToggleResidualAdd = (event: any) => {
+
+    const filterVisibleColumnsResidual = [...visibleColumnsResidual, ...[event]]
+    console.log('filterVisibleColumnsJob', filterVisibleColumnsResidual)
+    
+    setvisibleColumnsResidual(filterVisibleColumnsResidual);
+  };
+
+  const headerJob = <Button icon="pi pi-cog" onClick={() => setVisible(true)} />
+  const headerResidual = <Button icon="pi pi-cog" onClick={() => setVisible1(true)} />
 
   return (
-    <div className="grid">
-      <div className="col-4">
-        <div className="card">
-          <DataTable header={header} isDataSelectable={isRowSelectable}  value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
-            onSelectionChange={ onSelectionChange } metaKeySelection={false}>
-            {visibleColumnsJob.map((col) => (
-                <Column key={col.field} field={col.field} header={col.header} />
-            ))}
-          </DataTable>
+    <div>
+      <Dialog header="List of Jobs Settings" visible={visible} style={{ width: '50vw' }} onHide={() => setVisible(false)}>
+        <div className="grid">
+          <div className="col-6">
+            <h5>Displayed Columns</h5>
+            <ListBox options={visibleColumnsJob} optionLabel="header" onChange={(e) => onColumnToggleJobsRemove(e.value)} className="w-full md:w-14rem" />
+          </div>
+          <div className="col-6">
+            <h5>Hidden Columns</h5>
+            <ListBox options={ columnsJob.filter(({ field: id1 }) => !visibleColumnsJob.some(({ field: id2 }) => id2 === id1))} onChange={(e) => onColumnToggleJobsAdd(e.value)} optionLabel="header" className="w-full md:w-14rem" />
+          </div>
         </div>
-      </div>
-      <div className="col-8">
-            <DataTable header={header1} value={residuals?.[0]?.jobOutputs?.[0]?.fileData}>
-              {visibleColumnsResidual.map((col) => (
+      </Dialog>
+
+      <Dialog header="List of Residual Settings" visible={visible1} style={{ width: '50vw' }} onHide={() => setVisible1(false)}>
+        <div className="grid">
+          <div className="col-6">
+            <h5>Displayed Columns</h5>
+            <ListBox options={visibleColumnsResidual} optionLabel="header" onChange={(e) => onColumnToggleResidualRemove(e.value)} className="w-full md:w-14rem" />
+          </div>
+          <div className="col-6">
+            <h5>Hidden Columns</h5>
+            <ListBox options={ columnsResidual.filter(({ field: id1 }) => !visibleColumnsResidual.some(({ field: id2 }) => id2 === id1))} onChange={(e) => onColumnToggleResidualAdd(e.value)} optionLabel="header" className="w-full md:w-14rem" />
+          </div>
+        </div>
+      </Dialog>
+
+      <div className="grid">
+        <div className="col-4">
+          <div className="card">
+            <DataTable header={headerJob} isDataSelectable={isRowSelectable}  value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
+              onSelectionChange={ onSelectionChange } metaKeySelection={false}>
+              {visibleColumnsJob.map((col) => (
                   <Column key={col.field} field={col.field} header={col.header} />
               ))}
             </DataTable>
+          </div>
+        </div>
+        <div className="col-8">
+              <DataTable header={headerResidual} value={residuals?.[0]?.jobOutputs?.[0]?.fileData}>
+                {visibleColumnsResidual.map((col) => (
+                    <Column key={col.field} field={col.field} header={col.header} />
+                ))}
+              </DataTable>
+        </div>
       </div>
     </div>
   );
