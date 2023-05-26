@@ -5,6 +5,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { JobService } from '../hooks/JobService';
 import { ResidualService } from '../hooks/ResidualService';
+import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
 import { useRouter } from 'next/router';
 import { Tag } from 'primereact/tag';
 
@@ -53,12 +54,37 @@ interface Residual {
   jobOutputs: (jobOutput | { [key: string]: any })[];
 }
 
+interface ColumnMeta {
+  field: string;
+  header: string;
+}
+
 export default function Home() {
   const router = useRouter();
   const { jobID, requestID } = router.query;
   const [requests, setRequests] = useState<Request[]>([]);
   const [residuals, setResiduals] = useState<Residual | null>(null);
   const [selectedJob, setSelectedJob] = useState<Request | null>(null);
+
+  const columnsJob: ColumnMeta[] = [
+    { field: 'requestJobDbId', header: 'Job' },
+    { field: 'jobStatus', header: 'job Status' },
+    { field: 'analysisScript.scriptName', header: 'Script Name' },
+  ];
+
+  const [visibleColumnsJob, setVisibleColumnsJob] = useState<ColumnMeta[]>(columnsJob);
+
+  const columnsResidual: ColumnMeta[] = [
+    { field: 'entry_id', header: 'Entry No.' },
+    { field: 'rep_factor', header: 'REP' },
+    { field: 'blk', header: 'Block' },
+    { field: 'pa_x', header: 'PA X' },
+    { field: 'pa_y', header: 'Script PA Y' },
+    { field: 'YLD_CONT_TON', header: 'Yield' },
+    { field: 'RESID.BLUEs', header: 'RESID. BLUEs' },
+  ];
+
+  const [visibleColumnsResidual, setvisibleColumnsResidual] = useState<ColumnMeta[]>(columnsResidual);
 
   useEffect(() => {
     console.log('requestID', requestID)
@@ -119,31 +145,43 @@ export default function Home() {
     }
   }
 
-
   const isSelectable = (data: any) => data.jobStatus === 'ready';
   const isRowSelectable = (event: any) => (event.data ? isSelectable(event.data) : true);
+
+  const onColumnToggle = (event: MultiSelectChangeEvent) => {
+    let selectedColumns = event.value;
+    let orderedSelectedColumns = columnsJob.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+
+    setVisibleColumnsJob(orderedSelectedColumns);
+  };
+
+  const onColumnToggle1 = (event: MultiSelectChangeEvent) => {
+    let selectedColumns = event.value;
+    let orderedSelectedColumns = columnsResidual.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+
+    setvisibleColumnsResidual(orderedSelectedColumns);
+  };
+
+  const header = <MultiSelect value={visibleColumnsJob} options={columnsJob} optionLabel="header" onChange={onColumnToggle} className="w-full sm:w-20rem" display="chip" />;
+  const header1 = <MultiSelect value={visibleColumnsResidual} options={columnsResidual} optionLabel="header" onChange={onColumnToggle1} className="w-full sm:w-20rem" display="chip" />;
 
   return (
     <div className="grid">
       <div className="col-4">
         <div className="card">
-          <DataTable isDataSelectable={isRowSelectable}  value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
+          <DataTable header={header} isDataSelectable={isRowSelectable}  value={requests[0]?.requestJobs} dataKey="requestJobDbId" selectionMode="single" selection={selectedJob!} 
             onSelectionChange={ onSelectionChange } metaKeySelection={false}>
-            <Column field="requestJobDbId" header="Job" sortable />
-            <Column field="jobStatus" body={statusBodyTemplate} header="Job Status" sortable />
-            <Column field="analysisScript.scriptName" header="Script Name" sortable />
+            {visibleColumnsJob.map((col) => (
+                <Column key={col.field} field={col.field} header={col.header} />
+            ))}
           </DataTable>
         </div>
       </div>
       <div className="col-8">
-            <DataTable value={residuals?.[0]?.jobOutputs?.[0]?.fileData}>
-              <Column field="entry_id" header="Entry No."></Column>
-              <Column field="rep_factor" header="REP"></Column>
-              <Column field="blk" header="Block"></Column>
-              <Column field="pa_x" header="PA X"></Column>
-              <Column field="pa_y" header="PA Y"></Column>
-              <Column field="YLD_CONT_TON" header="Yield"></Column>
-              <Column field="RESID.BLUEs" header="RESID. BLUEs"></Column>
+            <DataTable header={header1} value={residuals?.[0]?.jobOutputs?.[0]?.fileData}>
+              {visibleColumnsResidual.map((col) => (
+                  <Column key={col.field} field={col.field} header={col.header} />
+              ))}
             </DataTable>
       </div>
     </div>
